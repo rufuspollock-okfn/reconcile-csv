@@ -34,6 +34,7 @@
    :body "404 not found"})
 
 (defn service-metadata []
+  "returns the service metadata"
   {:name "CSV Reconciliation service"
    :identifierSpace "http://localhost:8000/"
    :schemaSpace "http://localhost:8000/"
@@ -52,23 +53,22 @@
                       :service_path "/suggest"
                       :flyout_service_url "http://localhost:8000"
                       :flyout_sercice_path "/flyout"
-                      }
-             }
-
-   })
+                      }}})
 
 (def lcase (memoize lower-case))
 
 (defn score [^clojure.lang.PersistentVector query 
              ^clojure.lang.PersistentArrayMap row]
   "calculates the score for a query - which at this stage is a vector of vectors..."
-    (assoc row :score (reduce * 
-                              (map (fn [x] (fuzzy/dice 
-                                           (lcase (second x)) 
-                                           (lcase (get row (first x)))))
-                                   query))))
+    (assoc row 
+      :score (reduce * 
+                     (map (fn [x] (fuzzy/dice 
+                                   (lcase (second x)) 
+                                   (lcase (get row (first x)))))
+                          query))))
 
 (defn score-response [^clojure.lang.PersistentArrayMap x]
+  "creates the response to a score"
   {:id (get x (:id-column @config))
    :name (get x (:search-column @config))
    :score (:score x)
@@ -79,6 +79,7 @@
   )
 
 (defn extend-query [query properties]
+  "If the query contains properties - add them to the query"
   (loop [q query p properties]
     (if (first p)
       (let [tp (first p)]
@@ -86,6 +87,7 @@
       q)))
 
 (defn scores [q json?]
+  "calculate the scores for a query"
   (let [query {(:search-column @config)
                (if json? (:query q) q)}
         limit (if (:limit q) (:limit q) 5)
@@ -101,6 +103,7 @@
                        
 
 (defn reconcile-param [query]
+  "reconcile a single parameter"
   (let [q (try (json/read-str query :key-fn keyword)
                (catch Exception e query))
         j (if (:query q) true false)
@@ -109,14 +112,17 @@
   ))
 
 (defn reconcile-params [queries]
+  "reconcile multiple parameters"
   (let [queries (json/read-str queries :key-fn keyword)]
         (zipmap (keys queries)
                 (pmap reconcile-param (vals queries)))))
 
 (defn encapsulate-jsonp [callback d]
+  "encapsulate the return in jsonp"
   (str callback "(" d ")"))
 
 (defn json-response [callback d]
+  "return a json or jsonp response - with headers and shit"
   {:status 200
    :headers {"Content-Type" "application/javascript"}
    :body (if callback 
@@ -126,38 +132,38 @@
            (json/write-str d))})
 
 (defn reconcile [request]
+  "handles reconcile requests"
   (let [params (:params request)]
     (json-response (:callback params) 
            (if (:query params)
-                                (reconcile-param 
-                                 (:query params))
-                                (if (:queries params)
-                                  (reconcile-params 
-                                   (:queries params))
-                                  (service-metadata))))))
+             (reconcile-param 
+              (:query params))
+             (if (:queries params)
+               (reconcile-params 
+                (:queries params))
+               (service-metadata))))))
 
 (defn get-record-by-id [id]
+  "get a record when we have an id"
    (first (filter #(= (get % (:id-column @config)) id) @data)))
 
 (defn table-from-object [o]
-  (clojure.string/join
-   ""
-   [
+  "create a table from an object"
+  (str
    "<table>"
    (clojure.string/join 
     ""
-    (map #(clojure.string/join 
-           ""
-           ["<tr><td><strong>"
+    (map #(str 
+           "<tr><td><strong>"
             (first %)
             "</strong></td><td>"
             (second %)
-            "</td></tr>"])
+            "</td></tr>")
          o))                    
-   "</table>"]
-))
+   "</table>"))
 
 (defn view [id]
+  "return the view for an id"
   (let [o (get-record-by-id id)]
     (if (not o) 
       (four-o-four)
@@ -167,6 +173,7 @@
            "</body></html>"))))
 
 (defn suggest [request]
+  "suggest api - return suggestions"
   (let [params (:params request)
         prefix (:prefix params)
         callback (:callback params)
@@ -174,19 +181,20 @@
         query {:query prefix
                :limit limit}]
     (json-response callback 
-                {
-                 :code "/api/status/ok"
-                 :status "200 OK"
-                 :prefix prefix
-                 :result (map 
-                          #(assoc % 
-                             :n:type 
-                             {:id "/csv-recon"
-                              :name "csv-recon" })
-                          (:result (reconcile-param query)))
-                           })))
+                   {
+                    :code "/api/status/ok"
+                    :status "200 OK"
+                    :prefix prefix
+                    :result (map 
+                             #(assoc % 
+                                :n:type 
+                                {:id "/csv-recon"
+                                 :name "csv-recon" })
+                             (:result (reconcile-param query)))
+                    })))
             
 (defn flyout [request]
+  "the flyout - what is shown after searches"
   (let [params (:params request)
         callback (:callback params)
         id (:id params)
@@ -219,6 +227,7 @@
    (handler/api routes))
 
 (defn -main [file search-column id-column]
+  "main function - start the servers!"
   (swap! data (fn [x file] (csv-map/parse-csv (slurp file))) file)
   (swap! config (fn [x y] (assoc x :search-column y)) search-column)
   (swap! config (fn [x y] (assoc x :id-column y)) id-column)
