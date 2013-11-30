@@ -77,9 +77,9 @@
   "calculates the score for a query - which at this stage is a vector of vectors..."
     (assoc row 
       :score (reduce * 
-                     (map (fn [x] (fuzzy/dice 
-                                   (lcase (second x)) 
-                                   (lcase (get row (first x)))))
+                     (map #(fuzzy/dice 
+                                   (lcase (second %)) 
+                                   (lcase (get row (first %))))
                           query))))
 
 (defn score-response [^clojure.lang.PersistentArrayMap x]
@@ -96,10 +96,10 @@
 (defn extend-query [query properties]
   "If the query contains properties - add them to the query"
   (loop [q query p properties]
-    (if (first p)
-      (let [tp (first p)]
-        (recur (assoc q (:pid tp) (:v tp)) (rest p)))
-      q)))
+    (let [tp (first p)]
+      (if tp
+        (recur (assoc q (:pid tp) (:v tp)) (rest p))
+        q))))
 
 (defn scores [q json?]
   "calculate the scores for a query"
@@ -131,8 +131,6 @@
   (let [queries (json/read-str queries :key-fn keyword)]
         (zipmap (keys queries)
                 (pmap reconcile-param (vals queries)))))
-
-
 
 (defn reconcile [request]
   "handles reconcile requests"
