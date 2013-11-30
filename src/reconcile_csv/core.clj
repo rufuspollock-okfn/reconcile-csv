@@ -19,16 +19,31 @@
 (def config (atom {}))
 
 (defn hello [request]
+  "this used to say hello world... the index page"
   {:status 200
    :headers {"Content-Type" "text/html"}
    :body (slurp "index.html.tpl")})
 
-(defn get-data []
+(defn encapsulate-jsonp [callback d]
+  "encapsulate the return in jsonp"
+  (str callback "(" d ")"))
+
+(defn json-response [callback d]
+  "return a json or jsonp response - with headers and shit"
   {:status 200
-   :headers {"Content-Type" "application/json"}
-   :body (json/write-str (vec @data)) })
+   :headers {"Content-Type" "application/javascript"}
+   :body (if callback 
+           (encapsulate-jsonp 
+            callback 
+            (json/write-str d))
+           (json/write-str d))})
+
+(defn get-data []
+  "return all the data"
+  (json-response (vec @data)))
 
 (defn four-o-four []
+  "the error page"
   {:status 404
    :headers {"Content-Type" "text/html"}
    :body "404 not found"})
@@ -117,19 +132,7 @@
         (zipmap (keys queries)
                 (pmap reconcile-param (vals queries)))))
 
-(defn encapsulate-jsonp [callback d]
-  "encapsulate the return in jsonp"
-  (str callback "(" d ")"))
 
-(defn json-response [callback d]
-  "return a json or jsonp response - with headers and shit"
-  {:status 200
-   :headers {"Content-Type" "application/javascript"}
-   :body (if callback 
-           (encapsulate-jsonp 
-            callback 
-            (json/write-str d))
-           (json/write-str d))})
 
 (defn reconcile [request]
   "handles reconcile requests"
