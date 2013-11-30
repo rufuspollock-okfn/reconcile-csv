@@ -34,7 +34,6 @@
    :body "404 not found"})
 
 (defn service-metadata []
-  (do (print "getting metadata") 
   {:name "CSV Reconciliation service"
    :identifierSpace "http://localhost:8000/"
    :schemaSpace "http://localhost:8000/"
@@ -57,7 +56,6 @@
              }
 
    })
-  )
 
 (def lcase (memoize lower-case))
 
