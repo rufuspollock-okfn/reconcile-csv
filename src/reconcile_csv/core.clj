@@ -47,6 +47,14 @@
              :width 510
              :height 400
              }
+   :suggest {
+             :entity {
+                      :service_url "http://localhost:8000"
+                      :service_path "/suggest"
+                      :flyout_service_url "http://localhost:8000"
+                      :flyout_sercice_path "/flyout"
+                      }
+             }
 
    })
   )
@@ -128,9 +136,11 @@
             (:callback params) d)
            d)                                                  
    })))
+(defn get-record-by-id [id]
+   (first (filter #(= (get % (:id-column @config)) id) @data)))
 
 (defn view [id]
-  (let [o (first (filter #(= (get % (:id-column @config)) id) @data))]
+  (let [o (get-record-by-id id)]
     (if (not o) 
       (four-o-four)
       (str "<html><head>"
@@ -146,12 +156,71 @@
             (map #(str "<dt>" (first %) "</dt><dd>" (second %) "</dd><br/>") o))
            "</dl></body></html"))))
 
+(defn suggest [request]
+  (do (println "suggesting")
+  (let [params (:params request)
+        prefix (:prefix params)
+        callback (:callback params)
+        limit (or (:limit params) 10)
+        query {:query prefix
+               :limit limit} 
+        d (json/write-str {
+                           :code "/api/status/ok"
+                           :status "200 OK"
+                           :prefix prefix
+                           :result (map 
+                                    #(assoc % 
+                                       :n:type 
+                                       {:id "/csv-recon"
+                                        :name "csv-recon" })
+                                    (:result (reconcile-param query)))
+                           })]
+    {:status 200
+     :headers {"Content-Type" "application/javascript"}
+     :body (if callback 
+             (encapsulate-jsonp callback d)
+             d) })))
+            
+(defn flyout [request]
+  (let [params (:params request)
+        callback (:callback params)
+        id (:id params)
+        o (get-record-by-id id)
+        d (json/write-str 
+           {:id id
+            :html (clojure.string/join "\n" 
+                   ["<div style='color:#000'><strong>"
+                    (get o (:search-column @config))
+                    "</strong><br/>"
+                    "<table>"
+                    (clojure.string/join 
+                     "\n"
+                     (map #(clojure.string/join 
+                            ""
+                            ["<tr><td><strong>"
+                             (first %)
+                             "</strong></td><td>"
+                             (second %)
+                             "</td></tr>"])
+                          o))                    
+                    "</table></div>"] 
+                   )                                        
+            })]
+    (if (not o) (four-o-four)
+        {:status 200
+         :headers {"Content-Type" "application/javascript"}
+         :body (if callback (encapsulate-jsonp callback d)
+                   d)})))
+
 (defroutes routes 
   (GET "/" [] (hello nil))
   (GET "/reconcile" [:as r] (reconcile r))
   (POST "/reconcile" [:as r] (reconcile r))
   (GET "/view/:id" [id] (view id))
   (GET "/data" [] (get-data))
+  (GET "/suggest" [:as r] (suggest r))
+  (GET "/flyout" [:as r] (flyout r))
+  (GET "/private/flyout" [:as r] (flyout r))
   (route/not-found (four-o-four)))
 
 (def app
