@@ -112,9 +112,8 @@
 
 (defn reconcile-params [queries]
   (let [queries (json/read-str queries :key-fn keyword)]
-    (do (println queries)
         (zipmap (keys queries)
-                (pmap reconcile-param (vals queries))))))
+                (pmap reconcile-param (vals queries)))))
 
 (defn encapsulate-jsonp [callback d]
   (str callback "(" d ")"))
@@ -128,36 +127,45 @@
                                   (reconcile-params 
                                    (:queries params))
                                   (service-metadata))))]
-    (do (println request)
   {:status 200
    :headers {"Content-Type" "application/javascript"}
    :body (if (:callback params) 
            (encapsulate-jsonp 
             (:callback params) d)
            d)                                                  
-   })))
+   }))
+
 (defn get-record-by-id [id]
    (first (filter #(= (get % (:id-column @config)) id) @data)))
+
+(defn table-from-object [o]
+  (clojure.string/join
+   ""
+   [
+   "<table>"
+   (clojure.string/join 
+    ""
+    (map #(clojure.string/join 
+           ""
+           ["<tr><td><strong>"
+            (first %)
+            "</strong></td><td>"
+            (second %)
+            "</td></tr>"])
+         o))                    
+   "</table>"]
+))
 
 (defn view [id]
   (let [o (get-record-by-id id)]
     (if (not o) 
       (four-o-four)
       (str "<html><head>"
-           "<style>\n"
-           "dl { width: 500px; }\n"
-           "dt { font-weight: bold }\n"
-           "dd { }\n"
-           "dt, dd {display: inline-block;}\n"
-           "</style>"
-           "</head><body><dl>"
-           (clojure.string/join 
-            "\n"
-            (map #(str "<dt>" (first %) "</dt><dd>" (second %) "</dd><br/>") o))
-           "</dl></body></html"))))
+           "</head><body>"
+           (table-from-object o)
+           "</body></html>"))))
 
 (defn suggest [request]
-  (do (println "suggesting")
   (let [params (:params request)
         prefix (:prefix params)
         callback (:callback params)
@@ -179,7 +187,7 @@
      :headers {"Content-Type" "application/javascript"}
      :body (if callback 
              (encapsulate-jsonp callback d)
-             d) })))
+             d) }))
             
 (defn flyout [request]
   (let [params (:params request)
@@ -192,18 +200,8 @@
                    ["<div style='color:#000'><strong>"
                     (get o (:search-column @config))
                     "</strong><br/>"
-                    "<table>"
-                    (clojure.string/join 
-                     "\n"
-                     (map #(clojure.string/join 
-                            ""
-                            ["<tr><td><strong>"
-                             (first %)
-                             "</strong></td><td>"
-                             (second %)
-                             "</td></tr>"])
-                          o))                    
-                    "</table></div>"] 
+                    (table-from-object o)                  
+                    "</div>"] 
                    )                                        
             })]
     (if (not o) (four-o-four)
@@ -230,4 +228,6 @@
   (swap! data (fn [x file] (csv-map/parse-csv (slurp file))) file)
   (swap! config (fn [x y] (assoc x :search-column y)) search-column)
   (swap! config (fn [x y] (assoc x :id-column y)) id-column)
+  (println "Starting CSV Reconciliation service")
+  (println "Point refine to http://localhost:8000 as reconciliation service")
   (run-jetty app {:port 8000 :join? false}))
