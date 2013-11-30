@@ -21,7 +21,7 @@
 (defn hello [request]
   {:status 200
    :headers {"Content-Type" "text/html"}
-   :body "Hello World\n"})
+   :body (slurp "index.html.tpl")})
 
 (defn get-data []
   {:status 200
@@ -44,8 +44,8 @@
             }
    :preview {
              :url "http://localhost:8000/view/{{id}}"
-             :width 510
-             :height 400
+             :width 500
+             :height 350
              }
    :suggest {
              :entity {
@@ -118,22 +118,25 @@
 (defn encapsulate-jsonp [callback d]
   (str callback "(" d ")"))
 
+(defn json-response [callback d]
+  {:status 200
+   :headers {"Content-Type" "application/javascript"}
+   :body (if callback 
+           (encapsulate-jsonp 
+            callback 
+            (json/write-str d))
+           (json/write-str d))})
+
 (defn reconcile [request]
-  (let [params (:params request)
-        d (json/write-str (if (:query params)
+  (let [params (:params request)]
+    (json-response (:callback params) 
+           (if (:query params)
                                 (reconcile-param 
                                  (:query params))
                                 (if (:queries params)
                                   (reconcile-params 
                                    (:queries params))
-                                  (service-metadata))))]
-  {:status 200
-   :headers {"Content-Type" "application/javascript"}
-   :body (if (:callback params) 
-           (encapsulate-jsonp 
-            (:callback params) d)
-           d)                                                  
-   }))
+                                  (service-metadata))))))
 
 (defn get-record-by-id [id]
    (first (filter #(= (get % (:id-column @config)) id) @data)))
@@ -171,44 +174,37 @@
         callback (:callback params)
         limit (or (:limit params) 10)
         query {:query prefix
-               :limit limit} 
-        d (json/write-str {
-                           :code "/api/status/ok"
-                           :status "200 OK"
-                           :prefix prefix
-                           :result (map 
-                                    #(assoc % 
-                                       :n:type 
-                                       {:id "/csv-recon"
-                                        :name "csv-recon" })
-                                    (:result (reconcile-param query)))
-                           })]
-    {:status 200
-     :headers {"Content-Type" "application/javascript"}
-     :body (if callback 
-             (encapsulate-jsonp callback d)
-             d) }))
+               :limit limit}]
+    (json-response callback 
+                {
+                 :code "/api/status/ok"
+                 :status "200 OK"
+                 :prefix prefix
+                 :result (map 
+                          #(assoc % 
+                             :n:type 
+                             {:id "/csv-recon"
+                              :name "csv-recon" })
+                          (:result (reconcile-param query)))
+                           })))
             
 (defn flyout [request]
   (let [params (:params request)
         callback (:callback params)
         id (:id params)
-        o (get-record-by-id id)
-        d (json/write-str 
-           {:id id
-            :html (clojure.string/join "\n" 
-                   ["<div style='color:#000'><strong>"
-                    (get o (:search-column @config))
-                    "</strong><br/>"
-                    (table-from-object o)                  
-                    "</div>"] 
-                   )                                        
-            })]
+        o (get-record-by-id id)]
     (if (not o) (four-o-four)
-        {:status 200
-         :headers {"Content-Type" "application/javascript"}
-         :body (if callback (encapsulate-jsonp callback d)
-                   d)})))
+        (json-response 
+         callback
+         {:id id
+          :html (clojure.string/join 
+                 "" 
+                 ["<div style='color:#000'><strong>"
+                  (get o (:search-column @config))
+                  "</strong><br/>"
+                  (table-from-object o)                  
+                  "</div>"] 
+                 )}))))
 
 (defroutes routes 
   (GET "/" [] (hello nil))
