@@ -33,9 +33,8 @@
   {:status 200
    :headers {"Content-Type" "application/javascript"}
    :body (if callback 
-           (encapsulate-jsonp 
-            callback 
-            (json/write-str d))
+           (encapsulate-jsonp callback 
+                              (json/write-str d))
            (json/write-str d))})
 
 (defn get-data []
@@ -75,12 +74,14 @@
 (defn score [^clojure.lang.PersistentVector query 
              ^clojure.lang.PersistentArrayMap row]
   "calculates the score for a query - which at this stage is a vector of vectors..."
-    (assoc row 
-      :score (reduce * 
-                     (map #(fuzzy/dice 
-                                   (lcase (second %)) 
-                                   (lcase (get row (first %))))
-                          query))))
+  (let [fuzzy-match (fn [x] 
+                      (let [q (map lcase x)]
+                        (fuzzy/dice (second x) 
+                                    (get row (first x)))))]
+  (->> query
+       (map fuzzy-match)
+       (reduce *)
+       (assoc row :score))))
 
 (defn score-response [^clojure.lang.PersistentArrayMap x]
   "creates the response to a score"
@@ -104,16 +105,17 @@
   "calculate the scores for a query"
   (let [query {(:search-column @config)
                (if json? (:query q) q)}
-        limit (if-let [l (:limit q)] l 5)
+        limit (or (:limit q) 5)
         query (if-let [prop (:properties q)]
                 (extend-query query prop)
                 query)
-        query (vec query)
         score (partial score query)]
-   (vec (map score-response
-             (take limit 
-                   (sort-by (fn [x] (- (:score x)))
-                            (map score @data)))))))
+    (->> @data
+        (map score)
+        (sort-by (comp - :score))
+        (take limit)
+        (map score-response)
+        (vec))))
 
 (defn reconcile-param [query]
   "reconcile a single parameter"
