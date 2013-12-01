@@ -2,10 +2,8 @@
   (:use [ring.adapter.jetty]
         [ring.middleware.params]
         [compojure.core :only (defroutes GET POST)]
-        [ring.util.codec :only (form-decode)]
         [clojure.tools.nrepl.server 
          :only (start-server stop-server)]
-        [clojure.string :only (lower-case split)]
         )
   (:require [compojure.route :as route]
             [compojure.handler :as handler]
@@ -69,7 +67,7 @@
                       :flyout_sercice_path "/flyout"
                       }}})
 
-(def lcase (memoize lower-case))
+(def lcase (memoize clojure.string/lower-case))
 
 (defn score [^clojure.lang.PersistentVector query 
              ^clojure.lang.PersistentArrayMap row]
@@ -135,12 +133,13 @@
 (defn reconcile [request]
   "handles reconcile requests"
   (let [params (:params request)]
-    (json-response (:callback params) 
-           (if-let [query (:query params)]
-             (reconcile-param query)
-             (if-let [queries (:queries params)]
-               (reconcile-params queries)
-               (service-metadata))))))
+    (json-response (:callback params)
+                   (cond
+                    (:query params) (reconcile-param 
+                                     (:query params))
+                    (:queries params) (reconcile-params 
+                                       (:queries params))
+                    :else (service-metadata)))))
 
 (defn get-record-by-id [id]
   "get a record when we have an id"
