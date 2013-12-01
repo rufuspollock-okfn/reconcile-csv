@@ -96,18 +96,17 @@
 (defn extend-query [query properties]
   "If the query contains properties - add them to the query"
   (loop [q query p properties]
-    (let [tp (first p)]
-      (if tp
-        (recur (assoc q (:pid tp) (:v tp)) (rest p))
-        q))))
+    (if-let [tp (first p)]
+      (recur (assoc q (:pid tp) (:v tp)) (rest p))
+      q)))
 
 (defn scores [q json?]
   "calculate the scores for a query"
   (let [query {(:search-column @config)
                (if json? (:query q) q)}
-        limit (if (:limit q) (:limit q) 5)
-        query (if (:properties q)
-                (extend-query query (:properties q))
+        limit (if-let [l (:limit q)] l 5)
+        query (if-let [prop (:properties q)]
+                (extend-query query prop)
                 query)
         query (vec query)
         score (partial score query)]
@@ -115,7 +114,6 @@
              (take limit 
                    (sort-by (fn [x] (- (:score x)))
                             (map score @data)))))))
-                       
 
 (defn reconcile-param [query]
   "reconcile a single parameter"
@@ -136,12 +134,10 @@
   "handles reconcile requests"
   (let [params (:params request)]
     (json-response (:callback params) 
-           (if (:query params)
-             (reconcile-param 
-              (:query params))
-             (if (:queries params)
-               (reconcile-params 
-                (:queries params))
+           (if-let [query (:query params)]
+             (reconcile-param query)
+             (if-let [queries (:queries params)]
+               (reconcile-params queries)
                (service-metadata))))))
 
 (defn get-record-by-id [id]
@@ -165,23 +161,21 @@
 
 (defn view [id]
   "return the view for an id"
-  (let [o (get-record-by-id id)]
-    (if (not o) 
-      (four-o-four)
+  (if-let [o (get-record-by-id id)]
       (str "<html><head>"
            "</head><body>"
            (table-from-object o)
-           "</body></html>"))))
+           "</body></html>")
+      (four-o-four)))
 
 (defn suggest [request]
   "suggest api - return suggestions"
   (let [params (:params request)
         prefix (:prefix params)
-        callback (:callback params)
         limit (or (:limit params) 10)
         query {:query prefix
                :limit limit}]
-    (json-response callback 
+    (json-response (:callback params)
                    {
                     :code "/api/status/ok"
                     :status "200 OK"
@@ -198,20 +192,18 @@
   "the flyout - what is shown after searches"
   (let [params (:params request)
         callback (:callback params)
-        id (:id params)
-        o (get-record-by-id id)]
-    (if (not o) (four-o-four)
-        (json-response 
-         callback
-         {:id id
-          :html (clojure.string/join 
-                 "" 
-                 ["<div style='color:#000'><strong>"
-                  (get o (:search-column @config))
-                  "</strong><br/>"
-                  (table-from-object o)                  
-                  "</div>"] 
-                 )}))))
+        id (:id params)]
+    (if-let [o (get-record-by-id id)]
+      (json-response callback
+                     {:id id
+                      :html (str 
+                             "<div style='color:#000'><strong>"
+                             (get o (:search-column @config))
+                             "</strong><br/>"
+                             (table-from-object o)
+                             "</div>" 
+                             )})
+      (four-o-four))))
 
 (defroutes routes 
   (GET "/" [] (hello nil))
