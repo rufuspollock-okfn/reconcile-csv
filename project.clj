@@ -1,4 +1,4 @@
-(defproject reconcile-csv "0.1.1-SNAPSHOT"
+(defproject reconcile-csv "0.1.1"
   :description "A Reconciliation service, connecting CSV's with OpenRefine"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
