@@ -23,8 +23,8 @@ join your data painlessly.
 <a class="btn btn-primary btn-large" id="download" href="dist/reconcile-csv-0.1.1.jar">Download</a>
 reconcile-csv-0.1.1
 
-*Reconcile-csv* is free and open source software released under the BSD
-license. 
+*Reconcile-csv* is free and open source software released under the [BSD
+license](LICENSE). 
 
 ## Documentation
 
