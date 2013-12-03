@@ -1,0 +1,6 @@
+pygments: true
+auto: true
+# markdown: rdiscount
+markdown: kramdown
+future: false
+
