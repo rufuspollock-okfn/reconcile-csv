@@ -122,5 +122,6 @@ If you know clojure (or want to learn it) feel free to fork the
 pull-requests. Also look out for open issues you could resolve.
 
 If you have any questions or want to discuss similar solutions: the
-[OKFNLabs mailinglist]() or IRC Channel (#okfn on freenode) is the right
+[OKFNLabs mailinglist](http://okfnlabs.org/contact/) or IRC Channel (#okfn on freenode) is the right
+
 place.
