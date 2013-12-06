@@ -9,8 +9,8 @@
     [ring/ring-jetty-adapter "1.2.0"]
     [compojure "1.1.6"]
     [org.clojure/data.json "0.2.3"]
-    [fuzzy-string "0.1.2-SNAPSHOT"]
-    [csv-map "0.1.0-SNAPSHOT"]
+    [fuzzy-string "0.1.2"]
+    [csv-map "0.1.0"]
   ]
   :plugins [[lein-ring "0.8.7"]]
   :main reconcile-csv.core
