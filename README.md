@@ -47,5 +47,4 @@ to get the ID from the match.
 
 Copyright © 2013 Michael Bauer, Open Knowledge Foundation
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the BSD-2 Clause license. See LICENSE for details
