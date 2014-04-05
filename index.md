@@ -48,7 +48,7 @@ To start the reconciliation server [download](#download) the jar file
 above, then start it with:
 
 ```
-java reconcile-csv-0.1.1.jar <CSV-File> <Search Column> <ID Column>
+java -jar reconcile-csv-0.1.1.jar <CSV-File> <Search Column> <ID Column>
 ```
 
 **CSV-File** is the csv file you will use as a basis of reconciliation. As
