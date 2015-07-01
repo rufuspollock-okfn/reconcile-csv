@@ -73,9 +73,8 @@
              ^clojure.lang.PersistentArrayMap row]
   "calculates the score for a query - which at this stage is a vector of vectors..."
   (let [fuzzy-match (fn [x] 
-                      (let [q (map lcase x)]
-                        (fuzzy/dice (second x) 
-                                    (get row (first x)))))]
+                      (fuzzy/dice (second x) 
+                                  (get row (first x))))]
   (->> query
        (map fuzzy-match)
        (reduce *)
