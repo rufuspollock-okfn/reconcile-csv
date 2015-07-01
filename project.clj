@@ -1,4 +1,4 @@
-(defproject reconcile-csv "0.1.1"
+(defproject reconcile-csv "0.1.2-SNAPSHOT"
   :description "A Reconciliation service, connecting CSV's with OpenRefine"
   :url "http://okfnlabs.org/reconcile-csv"
   :license {:name "BSD 2-Clause"
@@ -9,7 +9,7 @@
     [ring/ring-jetty-adapter "1.2.0"]
     [compojure "1.1.6"]
     [org.clojure/data.json "0.2.3"]
-    [fuzzy-string "0.1.2"]
+    [fuzzy-string "0.1.3"]
     [csv-map "0.1.0"]
   ]
   :plugins [[lein-ring "0.8.7"]]
