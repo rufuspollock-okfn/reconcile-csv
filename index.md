@@ -20,8 +20,8 @@ matching to match entries in one dataset to entries in another dataset,
 helping to introduce unique IDs into the system - so they can be used to
 join your data painlessly.
 
-<a class="btn btn-primary btn-large" id="download" href="dist/reconcile-csv-0.1.1.jar">Download</a>
-reconcile-csv-0.1.1
+<a class="btn btn-primary btn-large" id="download" href="dist/reconcile-csv-0.1.2.jar">Download</a>
+reconcile-csv-0.1.2
 
 *Reconcile-csv* is free and open source software released under the [BSD
 license](LICENSE). 
@@ -48,7 +48,7 @@ To start the reconciliation server [download](#download) the jar file
 above, then start it with:
 
 ```
-java -Xmx2g -jar reconcile-csv-0.1.1.jar <CSV-File> <Search Column> <ID Column>
+java -Xmx2g -jar reconcile-csv-0.1.2.jar <CSV-File> <Search Column> <ID Column>
 ```
 
 **CSV-File** is the csv file you will use as a basis of reconciliation. As
