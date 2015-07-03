@@ -20,7 +20,7 @@ Create a column with Unique-ID's you will use to match.
 
 Pre-compiled:
 ```
-java -Xmx2g -jar reconcile-csv-1.0.1-SNAPSHOT-standalone.jar <file> <primary search column> <column with id's>
+java -Xmx2g -jar reconcile-csv-0.1.2.jar <file> <primary search column> <column with id's>
 ```
 
 With Leiningen:

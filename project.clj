@@ -14,5 +14,6 @@
   ]
   :plugins [[lein-ring "0.8.7"]]
   :main reconcile-csv.core
+  :aot [reconcile-csv.core]
   )
   

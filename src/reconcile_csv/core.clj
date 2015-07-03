@@ -12,7 +12,7 @@
             [csv-map.core :as csv-map])
   (:gen-class))
 
-(defonce server (start-server :port 7888))
+
 (def data (atom (list)))
 (def config (atom {}))
 
@@ -235,6 +235,7 @@
 
 (defn -main [file search-column id-column]
   "main function - start the servers!"
+  (defonce server (start-server :port 7888))
   (swap! data (fn [x file] (lcase-data (csv-map/parse-csv (slurp file)))) file)
   (swap! config (fn [x y] (assoc x :search-column y)) search-column)
   (swap! config (fn [x y] (assoc x :id-column y)) id-column)
