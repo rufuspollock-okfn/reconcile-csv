@@ -1,4 +1,4 @@
-(defproject reconcile-csv "0.1.2"
+(defproject reconcile-csv "0.1.3-SNAPSHOT"
   :description "A Reconciliation service, connecting CSV's with OpenRefine"
   :url "http://okfnlabs.org/reconcile-csv"
   :license {:name "BSD 2-Clause"
