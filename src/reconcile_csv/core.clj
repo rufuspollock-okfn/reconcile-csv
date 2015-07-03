@@ -12,7 +12,7 @@
             [csv-map.core :as csv-map])
   (:gen-class))
 
-(defonce server (start-server :port 7888))
+
 (def data (atom (list)))
 (def config (atom {}))
 
@@ -67,19 +67,17 @@
                       :flyout_sercice_path "/flyout"
                       }}})
 
-(def lcase (memoize clojure.string/lower-case))
 
 (defn score [^clojure.lang.PersistentVector query 
              ^clojure.lang.PersistentArrayMap row]
   "calculates the score for a query - which at this stage is a vector of vectors..."
   (let [fuzzy-match (fn [x] 
-                      (let [q (map lcase x)]
-                        (fuzzy/dice (second x) 
-                                    (get row (first x)))))]
+                      (fuzzy/dice (second x) 
+                                  (get row (first x))))]
   (->> query
        (map fuzzy-match)
        (reduce *)
-       (assoc row :score))))
+       (assoc (meta row) :score))))
 
 (defn score-response [^clojure.lang.PersistentArrayMap x]
   "creates the response to a score"
@@ -96,13 +94,14 @@
   "If the query contains properties - add them to the query"
   (loop [q query p properties]
     (if-let [tp (first p)]
-      (recur (assoc q (:pid tp) (:v tp)) (rest p))
+      (recur (assoc q (:pid tp) (clojure.string/lower-case (:v tp))) (rest p))
       q)))
 
 (defn scores [q json?]
   "calculate the scores for a query"
   (let [query {(:search-column @config)
-               (if json? (:query q) q)}
+               (clojure.string/lower-case 
+                (if json? (:query q) q))}
         limit (or (:limit q) 5)
         query (if-let [prop (:properties q)]
                 (extend-query query prop)
@@ -143,7 +142,7 @@
 
 (defn get-record-by-id [id]
   "get a record when we have an id"
-   (first (filter #(= (get % (:id-column @config)) id) @data)))
+   (meta (first (filter #(= (get (meta %) (:id-column @config)) id) @data))))
 
 (defn table-from-object [o]
   "create a table from an object"
@@ -206,6 +205,20 @@
                              )})
       (four-o-four))))
 
+(defn map-map
+  "maps a function over the values of a map. Returns a map"
+  [func m]
+  (reduce (fn [x y] (assoc x (y 0) (y 1)))
+          {}
+          (map (fn [x] [(x 0) (func (x 1))])  m)))
+
+(defn lcase-data
+  "lowercases data and leaves the original data as metadata"
+  [data]
+  (map (fn [x]
+         (with-meta (map-map clojure.string/lower-case x) x))
+       data))
+
 (defroutes routes 
   (GET "/" [] (hello nil))
   (GET "/reconcile" [:as r] (reconcile r))
@@ -222,7 +235,8 @@
 
 (defn -main [file search-column id-column]
   "main function - start the servers!"
-  (swap! data (fn [x file] (csv-map/parse-csv (slurp file))) file)
+  (defonce server (start-server :port 7888))
+  (swap! data (fn [x file] (lcase-data (csv-map/parse-csv (slurp file)))) file)
   (swap! config (fn [x y] (assoc x :search-column y)) search-column)
   (swap! config (fn [x y] (assoc x :id-column y)) id-column)
   (println "Starting CSV Reconciliation service")
