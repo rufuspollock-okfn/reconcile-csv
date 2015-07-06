@@ -97,6 +97,14 @@
       (recur (assoc q (:pid tp) (clojure.string/lower-case (:v tp))) (rest p))
       q)))
 
+(defn take-until
+  "takes from coll until a pred is met. Includes the matching item"
+  [pred coll]
+  (let [[f r] (split-with pred coll)]
+    (if-let [fr (first r)]
+      (conj f fr)
+      f)))
+
 (defn scores [q json?]
   "calculate the scores for a query"
   (let [query {(:search-column @config)
@@ -108,11 +116,12 @@
                 query)
         score (partial score query)]
     (->> @data
-        (map score)
-        (sort-by (comp - :score))
-        (take limit)
-        (map score-response)
-        (vec))))
+         (map score)
+         (take-until (fn [x] (not (= 1 (:score x)))))
+         (sort-by (comp - :score))
+         (take limit)
+         (map score-response)
+         (vec))))
 
 (defn reconcile-param [query]
   "reconcile a single parameter"
